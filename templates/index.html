@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Dynamic Form with Collapsible Sections</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .function-params, .content {
+            transition: max-height 0.3s ease-out;
+            max-height: 0;
+            overflow: auto;
+        }
+        .function-params.active, .content.active {
+            max-height: 1000px;
+        }
+        .toggle-btn {
+            cursor: pointer;
+        }
+        .toggle-btn::before {
+            content: '▼';
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s ease;
+        }
+        .toggle-btn.collapsed::before {
+            transform: rotate(-90deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <h1 class="text-2xl font-bold mb-6 text-center">UBS - Report Engine</h1>
+        <form id="dynamicForm" action="/generate_payload" method="post">
+            
+            <div id="chapterSections"></div>
+            
+            <button type="button" onclick="addChapter()" class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline mb-4">+ Add Chapter</button>
+            
+            <div class="flex items-center justify-between">
+                <input type="submit" value="Generate Payload" class="text-xs bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">
+            </div>
+        </form>
+
+        <div class="p-4 bg-gray-200 rounded mt-2">
+            <h2 class="text-xl font-semibold mb-4">Generated Payload</h2>
+            
+            {% if context %}
+                <pre class="bg-gray-100 p-4 rounded">
+                    {{ context|tojson(indent=2) }}
+                </pre>
+            {% else %}
+                <p>No data submitted yet. Please fill out the form.</p>
+            {% endif %}
+        </div>
+
+    </div>
+    
+    <script>
+        
+        let functionParams = {};
+
+        let chapterCount = 0;
+        let subChapterCounts = [];
+        let subSubChapterCounts = [];
+
+        function updateFunctionParams(select) {
+            const functionName = select.value;
+            const paramsDiv = select.parentElement.nextElementSibling;
+            paramsDiv.innerHTML = '';
+            if (functionName && functionParams[functionName]) {
+                let html = `<div class="mt-4 p-4 bg-gray-100 rounded">
+                                <h4 class="font-bold mb-2">${functionName} Parameters:</h4>
+                                <p class="mb-4">${functionParams[functionName].description}</p>`;
+                
+                for (const [param, details] of Object.entries(functionParams[functionName].params)) {
+                    const inputName = select.name.replace('function', `${functionName}_${param}`);
+                    html += `
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="${inputName}">${param} (${details.type}):</label>
+                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                type="${details.type === 'number' ? 'number' : 'text'}" 
+                                name="${inputName}" 
+                                placeholder="${details.description}"
+                                required>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                paramsDiv.innerHTML = html;
+            }
+            paramsDiv.classList.toggle('active', functionName !== '');
+        }
+
+        function addChapter() {
+            const chapterSections = document.getElementById('chapterSections');
+            const newChapter = document.createElement('div');
+            newChapter.className = 'mb-6 p-2 border border-gray-300 rounded';
+            const chapterIndex = chapterCount;
+            subChapterCounts[chapterIndex] = 0;
+            subSubChapterCounts[chapterIndex] = [];
+            newChapter.innerHTML = `
+                <div>
+                    <button type="button" onclick="removeChapterSection(this)" class="text-xs bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 mb-2 rounded focus:outline-none focus:shadow-outline">Remove</button>
+                    <h3 class="text-xl font-bold toggle-btn" onclick="toggleChapterSection(this)">Chapter ${chapterIndex + 1} <span class="chapter-title"></span></h3>
+                </div>
+                <div class="content active">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="chapter${chapterIndex}">Chapter Title:</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="chapter${chapterIndex}" required onInput="updateChapterTitle(this)">
+                    </div>
+                    <div class="sub-chapters"></div>
+                    <button type="button" onclick="addSubChapter(this, ${chapterIndex})" class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">+ Add Sub Chapter</button>
+                </div>`;
+            chapterSections.appendChild(newChapter);
+            chapterCount++;
+        }
+
+        function addSubChapter(button, chapterIndex) {
+            const subChapters = button.previousElementSibling;
+            const newSubChapter = document.createElement('div');
+            console.log('addsubchapter')
+            console.log(subSubChapterCounts)
+            newSubChapter.className = 'ml-4 mb-4 p-4 border border-gray-300 rounded';
+            const subChapterIndex = subChapterCounts[chapterIndex];
+            subSubChapterCounts[chapterIndex][subChapterIndex] = 0;
+            newSubChapter.innerHTML = `
+                <div>
+                    <button type="button" onclick="removeSubChapterSection(this)" class="text-xs bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 mb-2 rounded focus:outline-none focus:shadow-outline">Remove</button>
+                    <h4 class="text-lg font-bold mb-2 toggle-btn" onclick="toggleSection(this)">Sub Chapter ${chapterIndex + 1}.${subChapterIndex + 1} <span class="subchapter-title"></span></h4>
+                </div>
+                <div class="content active">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="subChapter${subChapterIndex}">Sub Chapter Title:</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="subChapter${subChapterIndex}" required onInput="updateSubChapterTitle(this)">
+                    </div>
+                    <div class="sub-sub-chapters"></div>
+                    <button type="button" onclick="addSubSubChapter(this, ${chapterIndex}, ${subChapterIndex})" class="text-xs mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">+ Add Sub Sub Chapter</button>
+                </div>`;
+            subChapters.appendChild(newSubChapter);
+            subChapterCounts[chapterIndex]++;
+        }
+
+        function addSubSubChapter(button, chapterIndex, subChapterIndex) {
+            const subSubChapters = button.previousElementSibling;
+            const newSubSubChapter = document.createElement('div');
+            newSubSubChapter.className = 'ml-4 mb-4 p-4 border border-gray-300 rounded';
+            const subSubChapterIndex = subSubChapterCounts[chapterIndex][subChapterIndex];
+            newSubSubChapter.innerHTML = `
+                <div>
+                    <button type="button" onclick="removeSubSubChapterSection(this)" class="text-xs bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 mb-2 rounded focus:outline-none focus:shadow-outline">Remove</button>
+                    <h5 class="text-md font-bold mb-2 toggle-btn" onclick="toggleSection(this)">Sub Sub Chapter ${chapterIndex + 1}.${subChapterIndex + 1}.${subSubChapterIndex + 1} <span class="subsubchapter-title"></span></h5>
+                </div>
+                <div class="content active">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="subSubChapter${subSubChapterIndex}">Sub Sub Chapter Title:</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="subSubChapter${subSubChapterIndex}" required onInput="updateSubSubChapterTitle(this)">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="function${subSubChapterIndex}">Function:</label>
+                        <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" name="function${subSubChapterIndex}" onchange="updateFunctionParams(this)">
+                            <option value="">Select a function</option>
+                            ${Object.entries(functionParams).map(([functionName]) => `<option value="${functionName}">${functionName.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="function-params"></div>
+                </div>`;
+            subSubChapters.appendChild(newSubSubChapter);
+            subSubChapterCounts[chapterIndex][subChapterIndex]++;
+        }
+
+        function toggleChapterSection(element) {
+            element.classList.toggle('collapsed');
+            const content = element.parentElement.nextElementSibling;
+            content.classList.toggle('active');
+        }
+
+        function toggleSection(element) {
+            element.classList.toggle('collapsed');
+            const content = element.nextElementSibling;
+            content.classList.toggle('active');
+        }
+
+
+        function removeChapterSection(button) {
+            const section = button.closest('div').parentElement;
+            const parent = section.parentElement;
+            chapterCount--;
+            parent.removeChild(section);
+        }
+
+        function removeSubChapterSection(button) {
+            const section = button.closest('div').parentElement;
+            const parent = section.parentElement;
+            subChapterCount--;
+            parent.removeChild(section);
+        }
+
+        function removeSubSubChapterSection(button) {
+            const section = button.closest('div').parentElement;
+            const parent = section.parentElement;
+            subSubChapterCount--;
+            parent.removeChild(section);
+        }
+
+        function updateChapterTitle(input) {
+            const titleSpan = input.closest('.content').previousElementSibling.querySelector('.chapter-title');
+            console.log(titleSpan)
+            titleSpan.textContent = input.value ? `: ${input.value}` : '';
+        }
+
+        function updateSubChapterTitle(input) {
+            const titleSpan = input.closest('.content').previousElementSibling.querySelector('.subchapter-title');
+            console.log(titleSpan)
+            titleSpan.textContent = input.value ? `: ${input.value}` : '';
+        }
+
+        function updateSubSubChapterTitle(input) {
+            const titleSpan = input.closest('.content').previousElementSibling.querySelector('.subsubchapter-title');
+            titleSpan.textContent = input.value ? `: ${input.value}` : '';
+        }
+
+        console.log(functionParams)
+
+        // Initialize the form with one chapter
+        addChapter();
+
+        // Fetch function parameters from the server
+
+        fetch('/get_function_params')
+        .then(response => response.json())
+        .then(data => {
+            functionParams = data;
+        });
+    </script>
+</body>
+</html>
