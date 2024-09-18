@@ -80,8 +80,6 @@ async def handle_form(request: Request):
     current_chapter = None
     current_sub_chapter = None
 
-    print(form_data.items())
-
     for key, value in form_data.items():
         if key.startswith('chapter'):
             current_chapter = {"chapter": value, "sub_chapters": []}
@@ -121,7 +119,7 @@ async def handle_form(request: Request):
         "cover_data": cover_data,
         "chapters_data": chapters_data
     }
-    return templates.TemplateResponse("index.html", {"request": request, "context": CONTEXT})
+    return JSONResponse(content=CONTEXT)
 
 @app.get("/get_function_params")
 async def get_function_params():

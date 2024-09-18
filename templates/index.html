@@ -40,43 +40,47 @@
                     <label for="meeting-time">COB: </label>
                     <input type="date" name="cob" class="mb-2">
                 
-                    <label class="block text-gray-700 text-lg font-bold mb-2" for="chapter${chapterIndex}">Report Title:</label>
+                    <label class="block text-gray-700 text-lg font-bold mb-2" for="report_title">Report Title:</label>
                     <input
                         class="shadow appearance-none border rounded w-full py-2 px-3 mb-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        type="text" name="report_title">
-                    <label class="block text-gray-700 text-md mb-2" for="chapter${chapterIndex}">Report Subtitle:</label>
+                        type="text" name="report_title" id="report_title">
+                    <label class="block text-gray-700 text-md mb-2" for="report_subtitle">Report Subtitle:</label>
                     <input
                         class="shadow appearance-none border rounded w-full py-2 px-3 mb-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        type="text" name="report_subtitle">
-                    <label class="block text-gray-700 text-xs mb-2" for="chapter${chapterIndex}">Report Sub Subtitle:</label>
+                        type="text" name="report_subtitle" id="report_subtitle">
+                    <label class="block text-gray-700 text-xs mb-2" for="report_subsubtitle">Report Sub Subtitle:</label>
                     <input
                         class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        type="text" name="report_subsubtitle">
+                        type="text" name="report_subsubtitle" id="report_subsubtitle">
                 </div>
-                </div>
-                    <div id="chapterSections"></div>
-                    <button type="button" onclick="addChapter()"
-                        class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline mb-4">+
-                        Add Chapter</button>
-            <div class="flex items-center justify-between">
-                <input type="submit" value="Generate Payload" class="text-xs bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">
-                <a href="/run_report" id="run-report-link">
-                    <span id="report-status">Run Report</span>
-                </a>
             </div>
-
+            <div id="chapterSections"></div>
+            <button type="button" onclick="addChapter()"
+                class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 px-3 rounded-full shadow-sm transition duration-150 ease-in-out mb-4">
+                + Add Chapter
+            </button>
+            <div class="flex items-center space-x-4">
+                <input type="submit" value="Generate Payload" class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">
+                <button type="button" id="run-report-btn" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">
+                    Run Report
+                </button>
+                <button type="button" id="reset-form-btn" class="text-xs bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">
+                    Reset Form
+                </button>
+            </div>
         </form>
 
         <div class="p-4 bg-gray-200 rounded mt-2">
             <h2 class="text-xl font-semibold mb-4">Generated Payload</h2>
             
-            {% if context %}
-                <pre class="bg-gray-100 p-4 rounded">
-                    {{ context|tojson(indent=2) }}
-                </pre>
-            {% else %}
-                <p>No data submitted yet. Please fill out the form.</p>
-            {% endif %}
+            <div id="payload-container" class="relative" style="display: none;">
+                <pre id="payload-content" class="bg-gray-100 p-4 rounded"></pre>
+                <button id="copy-payload" class="absolute top-2 right-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs">
+                    Copy
+                </button>
+            </div>
+            
+            <p id="no-data-message">No data submitted yet. Please fill out the form.</p>
         </div>
 
         {% if run_report %}
@@ -85,11 +89,9 @@
         <p>No Report</p>
         {% endif %}
         
-        
-
         <div id="report-info" class="mt-4" style="display: none;">
             <p>Report filename: <span id="report-filename"></span></p>
-            <button id="download-report-btn" class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline mt-2">
+            <button id="download-report-btn" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out mt-2">
                 Download Report
             </button>
         </div>
@@ -102,11 +104,9 @@
         let subSubChapterCounts = [];
 
         async function runReport() {
-            const reportStatusElement = document.getElementById('report-status');
             const reportInfoElement = document.getElementById('report-info');
             const reportFilenameElement = document.getElementById('report-filename');
             
-            reportStatusElement.textContent = 'Running...';
             reportInfoElement.style.display = 'none';
             
             try {
@@ -114,13 +114,12 @@
                 const data = await response.json();
 
                 if (data.status === 'completed') {
-                    reportStatusElement.textContent = 'Report Completed';
                     reportFilenameElement.textContent = data.filename;
                     reportInfoElement.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Error generating report:', error);
-                reportStatusElement.textContent = 'Error generating report';
+                alert('Error generating report');
             }
         }
 
@@ -184,8 +183,6 @@
         function addSubChapter(button, chapterIndex) {
             const subChapters = button.previousElementSibling;
             const newSubChapter = document.createElement('div');
-            console.log('addsubchapter')
-            console.log(subSubChapterCounts)
             newSubChapter.className = 'ml-4 mb-4 p-4 border border-gray-300 rounded';
             const subChapterIndex = subChapterCounts[chapterIndex];
             subSubChapterCounts[chapterIndex][subChapterIndex] = 0;
@@ -196,8 +193,8 @@
                 </div>
                 <div class="content active">
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="subChapter${subChapterIndex}">Sub Chapter Title:</label>
-                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="subChapter${subChapterIndex}" required onInput="updateSubChapterTitle(this)">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="subChapter${chapterIndex}_${subChapterIndex}">Sub Chapter Title:</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="subChapter${chapterIndex}_${subChapterIndex}" required onInput="updateSubChapterTitle(this)">
                     </div>
                     <div class="sub-sub-chapters"></div>
                     <button type="button" onclick="addSubSubChapter(this, ${chapterIndex}, ${subChapterIndex})" class="text-xs mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">+ Add Sub Sub Chapter</button>
@@ -218,12 +215,12 @@
                 </div>
                 <div class="content active">
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="subSubChapter${subSubChapterIndex}">Sub Sub Chapter Title:</label>
-                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="subSubChapter${subSubChapterIndex}" required onInput="updateSubSubChapterTitle(this)">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="subSubChapter${chapterIndex}_${subChapterIndex}_${subSubChapterIndex}">Sub Sub Chapter Title:</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="subSubChapter${chapterIndex}_${subChapterIndex}_${subSubChapterIndex}" required onInput="updateSubSubChapterTitle(this)">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="function${subSubChapterIndex}">Function:</label>
-                        <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" name="function${subSubChapterIndex}" onchange="updateFunctionParams(this)">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="function${chapterIndex}_${subChapterIndex}_${subSubChapterIndex}">Function:</label>
+                        <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" name="function${chapterIndex}_${subChapterIndex}_${subSubChapterIndex}" onchange="updateFunctionParams(this)">
                             <option value="">Select a function</option>
                             ${Object.entries(functionParams).map(([functionName]) => `<option value="${functionName}">${functionName.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}</option>`).join('')}
                         </select>
@@ -247,35 +244,31 @@
         }
 
         function removeChapterSection(button) {
-            const section = button.closest('div').parentElement;
+            const section = button.closest('.mb-6');
             const parent = section.parentElement;
             chapterCount--;
             parent.removeChild(section);
         }
 
         function removeSubChapterSection(button) {
-            const section = button.closest('div').parentElement;
+            const section = button.closest('.ml-4');
             const parent = section.parentElement;
-            subChapterCount--;
             parent.removeChild(section);
         }
 
         function removeSubSubChapterSection(button) {
-            const section = button.closest('div').parentElement;
+            const section = button.closest('.ml-4');
             const parent = section.parentElement;
-            subSubChapterCount--;
             parent.removeChild(section);
         }
 
         function updateChapterTitle(input) {
             const titleSpan = input.closest('.content').previousElementSibling.querySelector('.chapter-title');
-            console.log(titleSpan)
             titleSpan.textContent = input.value ? `: ${input.value}` : '';
         }
 
         function updateSubChapterTitle(input) {
             const titleSpan = input.closest('.content').previousElementSibling.querySelector('.subchapter-title');
-            console.log(titleSpan)
             titleSpan.textContent = input.value ? `: ${input.value}` : '';
         }
 
@@ -284,7 +277,14 @@
             titleSpan.textContent = input.value ? `: ${input.value}` : '';
         }
 
-        console.log(functionParams)
+        function resetForm() {
+            document.getElementById('dynamicForm').reset();
+            document.getElementById('chapterSections').innerHTML = '';
+            chapterCount = 0;
+            subChapterCounts = [];
+            subSubChapterCounts = [];
+            addChapter(); // Add initial chapter
+        }
 
         // Initialize the form with one chapter
         addChapter();
@@ -296,8 +296,8 @@
             functionParams = data;
         });
 
-        // Add event listener for the run report link
-        document.getElementById('run-report-link').addEventListener('click', function (event) {
+        // Add event listener for the run report button
+        document.getElementById('run-report-btn').addEventListener('click', function (event) {
             event.preventDefault();
             runReport();
         });
@@ -306,6 +306,66 @@
         document.getElementById('download-report-btn').addEventListener('click', function (event) {
             event.preventDefault();
             downloadReport();
+        });
+
+        // Add event listener for the reset form button
+        document.getElementById('reset-form-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            resetForm();
+        });
+
+        // Add event listener for the copy payload button
+        document.getElementById('copy-payload')?.addEventListener('click', function (event) {
+            const payloadContent = document.getElementById('payload-content').textContent;
+            navigator.clipboard.writeText(payloadContent).then(function() {
+                alert('Payload copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        });
+
+        // Preserve form values on submit
+        document.getElementById('dynamicForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            fetch('/generate_payload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json();
+                } else {
+                    throw new Error("Oops, we haven't got JSON!");
+                }
+            })
+            .then(data => {
+                // Update the payload display
+                const payloadContainer = document.getElementById('payload-container');
+                const payloadContent = document.getElementById('payload-content');
+                const noDataMessage = document.getElementById('no-data-message');
+                
+                if (payloadContent) {
+                    payloadContent.textContent = JSON.stringify(data, null, 2);
+                    payloadContainer.style.display = 'block';
+                    noDataMessage.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Display error message to the user
+                const payloadContainer = document.getElementById('payload-container');
+                const payloadContent = document.getElementById('payload-content');
+                const noDataMessage = document.getElementById('no-data-message');
+                
+                payloadContent.textContent = `An error occurred: ${error.message}`;
+                payloadContainer.style.display = 'block';
+                noDataMessage.style.display = 'none';
+            });
         });
     </script>
 </body>
