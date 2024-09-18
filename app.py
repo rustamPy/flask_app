@@ -1,7 +1,10 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from threading import Thread
 from typing import Dict, Any
+import time
+import asyncio
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -105,6 +108,18 @@ async def handle_form(request: Request):
 @app.get("/get_function_params")
 async def get_function_params():
     return JSONResponse(content=function_params)
+
+@app.get("/run_report", response_class=HTMLResponse)
+async def run_report(request: Request):
+    # Simulate a long-running task
+    await asyncio.sleep(10)
+    res = 3
+
+    return templates.TemplateResponse("index.html", {"request": request, "run_report": True, "res": res})
+
+
+
+
 
 if __name__ == "__main__":
     import uvicorn

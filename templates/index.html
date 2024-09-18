@@ -28,6 +28,9 @@
             transform: rotate(-90deg);
         }
     </style>
+    <script>
+
+    </script>
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -40,6 +43,9 @@
             
             <div class="flex items-center justify-between">
                 <input type="submit" value="Generate Payload" class="text-xs bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">
+                <a href="/run_report" id="run-report-link">
+                    <span id="report-status">Run Report</span>
+                </a>
             </div>
         </form>
 
@@ -55,12 +61,49 @@
             {% endif %}
         </div>
 
+        {% if run_report %}
+        <p>Report Completed</p>
+        {% else %}
+        <p>No Report</p>
+        {% endif %}
+        
+        {{res}}
     </div>
     
     <script>
-        
-        let functionParams = {};
+                                async function runReport() {
+                                    const reportStatusElement = document.getElementById('report-status');
+                                    reportStatusElement.textContent = 'Running...';
+                                    console.log(reportStatusElement);
 
+                                    // Send request to start report generation
+                                    await fetch('/run_report');
+
+                                    // Polling to check if the report is completed
+                                    let completed = false;
+                                    while (!completed) {
+                                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
+
+                                        // Fetch the main endpoint or a different endpoint to check status
+                                        const response = await fetch('/run_report'); // Using main endpoint to check status
+                                        const text = await response.text();
+
+                                        // Check if the response indicates completion
+                                        // This might require server-side logic to include completion status in the main page
+                                        if (text.includes('Report Completed')) {
+                                            completed = true;
+                                            reportStatusElement.textContent = 'Report Completed';
+                                        }
+                                    }
+                                }
+
+                                // Add event listener for the link
+                                document.getElementById('run-report-link').addEventListener('click', function (event) {
+
+                                    runReport();
+                                });
+        
+                                                let functionParams = {};
         let chapterCount = 0;
         let subChapterCounts = [];
         let subSubChapterCounts = [];
