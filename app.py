@@ -1,10 +1,19 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from starlette.background import BackgroundTask
 from fastapi.templating import Jinja2Templates
+from io import StringIO
 from threading import Thread
 from typing import Dict, Any
 import time
 import asyncio
+import uuid
+from fastapi import HTTPException
+
+from hello import hello
+
+import tempfile
+import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -61,6 +70,7 @@ async def read_form(request: Request):
 
 @app.post("/generate_payload", response_class=HTMLResponse)
 async def handle_form(request: Request):
+    global CONTEXT
     form_data = await request.form()
     
     # Process chapters, sub-chapters, and sub-sub-chapters
@@ -117,13 +127,58 @@ async def handle_form(request: Request):
 async def get_function_params():
     return JSONResponse(content=function_params)
 
-@app.get("/run_report", response_class=HTMLResponse)
+report_cache = {}
+
+
+@app.get("/run_report")
 async def run_report(request: Request):
     # Simulate a long-running task
-    await asyncio.sleep(10)
-    res = 3
+    await asyncio.sleep(1)
+    res = hello()
 
-    return templates.TemplateResponse("index.html", {"request": request, "run_report": True, "res": res})
+    # Generate HTML content
+    html_content = generate_html_content("dasda")
+
+    # Create a unique filename
+    filename = f"report_{uuid.uuid4().hex}.html"
+
+    # Store the content in the cache
+    report_cache[filename] = html_content
+
+    return JSONResponse(content={"status": "completed", "filename": filename})
+
+@app.get("/download/{filename}")
+async def download_file(filename: str):
+    if filename not in report_cache:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    content = report_cache[filename]
+    
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".html") as temp_file:
+        temp_file.write(content)
+        temp_file_path = temp_file.name
+
+    return FileResponse(temp_file_path, media_type="text/html", filename=filename)
+
+
+
+def generate_html_content(res):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Report Result</title>
+    </head>
+    <body>
+        <h1>Report Result</h1>
+        <p>{res}</p>
+    </body>
+    </html>
+    """
+    return html_content
 
 
 

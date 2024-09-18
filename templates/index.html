@@ -28,9 +28,6 @@
             transform: rotate(-90deg);
         }
     </style>
-    <script>
-
-    </script>
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -67,6 +64,7 @@
                     <span id="report-status">Run Report</span>
                 </a>
             </div>
+
         </form>
 
         <div class="p-4 bg-gray-200 rounded mt-2">
@@ -87,46 +85,49 @@
         <p>No Report</p>
         {% endif %}
         
-        {{res}}
+        
+
+        <div id="report-info" class="mt-4" style="display: none;">
+            <p>Report filename: <span id="report-filename"></span></p>
+            <button id="download-report-btn" class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline mt-2">
+                Download Report
+            </button>
+        </div>
     </div>
     
     <script>
-                                async function runReport() {
-                                    const reportStatusElement = document.getElementById('report-status');
-                                    reportStatusElement.textContent = 'Running...';
-                                    console.log(reportStatusElement);
-
-                                    // Send request to start report generation
-                                    await fetch('/run_report');
-
-                                    // Polling to check if the report is completed
-                                    let completed = false;
-                                    while (!completed) {
-                                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
-
-                                        // Fetch the main endpoint or a different endpoint to check status
-                                        const response = await fetch('/run_report'); // Using main endpoint to check status
-                                        const text = await response.text();
-
-                                        // Check if the response indicates completion
-                                        // This might require server-side logic to include completion status in the main page
-                                        if (text.includes('Report Completed')) {
-                                            completed = true;
-                                            reportStatusElement.textContent = 'Report Completed';
-                                        }
-                                    }
-                                }
-
-                                // Add event listener for the link
-                                document.getElementById('run-report-link').addEventListener('click', function (event) {
-
-                                    runReport();
-                                });
-        
-                                                let functionParams = {};
+        let functionParams = {};
         let chapterCount = 0;
         let subChapterCounts = [];
         let subSubChapterCounts = [];
+
+        async function runReport() {
+            const reportStatusElement = document.getElementById('report-status');
+            const reportInfoElement = document.getElementById('report-info');
+            const reportFilenameElement = document.getElementById('report-filename');
+            
+            reportStatusElement.textContent = 'Running...';
+            reportInfoElement.style.display = 'none';
+            
+            try {
+                const response = await fetch('/run_report');
+                const data = await response.json();
+
+                if (data.status === 'completed') {
+                    reportStatusElement.textContent = 'Report Completed';
+                    reportFilenameElement.textContent = data.filename;
+                    reportInfoElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error generating report:', error);
+                reportStatusElement.textContent = 'Error generating report';
+            }
+        }
+
+        function downloadReport() {
+            const filename = document.getElementById('report-filename').textContent;
+            window.location.href = `/download/${filename}`;
+        }
 
         function updateFunctionParams(select) {
             const functionName = select.value;
@@ -245,7 +246,6 @@
             content.classList.toggle('active');
         }
 
-
         function removeChapterSection(button) {
             const section = button.closest('div').parentElement;
             const parent = section.parentElement;
@@ -290,11 +290,22 @@
         addChapter();
 
         // Fetch function parameters from the server
-
         fetch('/get_function_params')
         .then(response => response.json())
         .then(data => {
             functionParams = data;
+        });
+
+        // Add event listener for the run report link
+        document.getElementById('run-report-link').addEventListener('click', function (event) {
+            event.preventDefault();
+            runReport();
+        });
+
+        // Add event listener for the download button
+        document.getElementById('download-report-btn').addEventListener('click', function (event) {
+            event.preventDefault();
+            downloadReport();
         });
     </script>
 </body>
