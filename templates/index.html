@@ -36,11 +36,31 @@
     <div class="max-w-4xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <h1 class="text-2xl font-bold mb-6 text-center">UBS - Report Engine</h1>
         <form id="dynamicForm" action="/generate_payload" method="post">
+            <div class="mb-6 p-2 border border-gray-300 rounded">
+                <h1 class="text-xl font-bold mb-2"> Cover Page </h1>
             
-            <div id="chapterSections"></div>
-            
-            <button type="button" onclick="addChapter()" class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline mb-4">+ Add Chapter</button>
-            
+                <div>
+                    <label for="meeting-time">COB: </label>
+                    <input type="date" name="cob" class="mb-2">
+                
+                    <label class="block text-gray-700 text-lg font-bold mb-2" for="chapter${chapterIndex}">Report Title:</label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 mb-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        type="text" name="report_title">
+                    <label class="block text-gray-700 text-md mb-2" for="chapter${chapterIndex}">Report Subtitle:</label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 mb-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        type="text" name="report_subtitle">
+                    <label class="block text-gray-700 text-xs mb-2" for="chapter${chapterIndex}">Report Sub Subtitle:</label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        type="text" name="report_subsubtitle">
+                </div>
+                </div>
+                    <div id="chapterSections"></div>
+                    <button type="button" onclick="addChapter()"
+                        class="text-xs bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline mb-4">+
+                        Add Chapter</button>
             <div class="flex items-center justify-between">
                 <input type="submit" value="Generate Payload" class="text-xs bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-2 rounded focus:outline-none focus:shadow-outline">
                 <a href="/run_report" id="run-report-link">

@@ -65,6 +65,8 @@ async def handle_form(request: Request):
     
     # Process chapters, sub-chapters, and sub-sub-chapters
     chapters_data = []
+    cover_data = {}
+    cob = ''
     current_chapter = None
     current_sub_chapter = None
 
@@ -99,8 +101,14 @@ async def handle_form(request: Request):
                         sub_sub_chapter["params"][param] = form_data.get(param_key, '')
             
             current_sub_chapter["sub_sub_chapters"].append(sub_sub_chapter)
+        elif key.startswith('report'):
+            cover_data[key] = value
+        elif key == 'cob':
+            cob = value
 
     CONTEXT = {
+        "cob": cob,
+        "cover_data": cover_data,
         "chapters_data": chapters_data
     }
     return templates.TemplateResponse("index.html", {"request": request, "context": CONTEXT})
